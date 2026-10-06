@@ -11,7 +11,7 @@ public record LogEntry(int tick, String deviceId, String text) {
 
     /**
      * Formats the line for display, for example
-     * {@code "09:00:15  Failed login: admin from 203.0.113.42"}.
+     * {@code "00:15:00  Failed login: admin from 203.0.113.42"}.
      *
      * @return the clock time followed by the text
      */

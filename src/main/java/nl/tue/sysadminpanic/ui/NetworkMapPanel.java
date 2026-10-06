@@ -22,8 +22,6 @@ import nl.tue.sysadminpanic.model.Device;
 import nl.tue.sysadminpanic.model.DeviceType;
 import nl.tue.sysadminpanic.model.Link;
 import nl.tue.sysadminpanic.model.Network;
-import nl.tue.sysadminpanic.sim.GameEvent;
-import nl.tue.sysadminpanic.sim.GameEventListener;
 
 /**
  * The clickable network map.
@@ -32,7 +30,7 @@ import nl.tue.sysadminpanic.sim.GameEventListener;
  * panel size, so the map follows the window when it is resized. Colors show the
  * <em>known</em> state only: the map never reveals more than the security team knows.
  */
-public class NetworkMapPanel extends JPanel implements GameEventListener {
+public class NetworkMapPanel extends JPanel {
 
     private static final int NODE_WIDTH = 104;
     private static final int NODE_HEIGHT = 40;
@@ -91,9 +89,8 @@ public class NetworkMapPanel extends JPanel implements GameEventListener {
         repaint();
     }
 
-    @Override
-    public void onEvent(GameEvent event) {
-        // Any event may change what the map shows, and a repaint is cheap.
+    /** Redraws the map, for example after a device's known state changed. */
+    public void refresh() {
         repaint();
     }
 

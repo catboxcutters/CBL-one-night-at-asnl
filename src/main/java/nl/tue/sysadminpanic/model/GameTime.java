@@ -14,13 +14,15 @@ public final class GameTime {
     }
 
     /**
-     * Formats a tick as clock time. Tick 0 is 09:00:00 and each tick is one second.
+     * Formats a tick as clock time. Tick 0 is 00:00:00 (12 AM) and each tick
+     * advances the clock by {@link GameConstants#CLOCK_SECONDS_PER_TICK}.
      *
      * @param tick the simulation tick
      * @return the clock time as {@code HH:MM:SS}
      */
     public static String format(int tick) {
-        int seconds = GameConstants.CLOCK_START_SECONDS + tick;
+        int seconds = GameConstants.CLOCK_START_SECONDS
+                + tick * GameConstants.CLOCK_SECONDS_PER_TICK;
         int hours = (seconds / SECONDS_PER_HOUR) % HOURS_PER_DAY;
         int minutes = (seconds / SECONDS_PER_MINUTE) % SECONDS_PER_MINUTE;
         return String.format("%02d:%02d:%02d", hours, minutes, seconds % SECONDS_PER_MINUTE);

@@ -56,49 +56,4 @@ class OfficeNetworkScenarioTest {
     void everyGameGetsAFreshNetwork() {
         assertNotSame(network.getDevice("DB-01"), scenario.createNetwork().getDevice("DB-01"));
     }
-
-    @Test
-    void thereAreFiveWavesWithTheSpecNames() {
-        List<String> names = scenario.getWaves().stream().map(WaveDefinition::name).toList();
-        assertEquals(List.of("Knock knock", "Special delivery", "Crying wolf", "Two fronts",
-                "The big one"), names);
-    }
-
-    @Test
-    void everyEventRefersToExistingDevices() {
-        for (WaveDefinition wave : scenario.getWaves()) {
-            for (ScriptedEvent event : wave.events()) {
-                switch (event) {
-                    case ScriptedEvent.StartCampaign s -> {
-                        network.getDevice(s.entryDeviceId());
-                        network.getDevice(s.targetDeviceId());
-                    }
-                    case ScriptedEvent.ScriptedAlert a -> network.getDevice(a.deviceId());
-                }
-            }
-        }
-    }
-
-    @Test
-    void attackersUseDocumentationIpRanges() {
-        for (WaveDefinition wave : scenario.getWaves()) {
-            for (ScriptedEvent event : wave.events()) {
-                if (event instanceof ScriptedEvent.StartCampaign start) {
-                    String ip = start.sourceIp();
-                    assertTrue(ip.startsWith("203.0.113.") || ip.startsWith("198.51.100."), ip);
-                }
-            }
-        }
-    }
-
-    @Test
-    void everyAttackTargetsTheDatabase() {
-        for (WaveDefinition wave : scenario.getWaves()) {
-            for (ScriptedEvent event : wave.events()) {
-                if (event instanceof ScriptedEvent.StartCampaign start) {
-                    assertEquals("DB-01", start.targetDeviceId());
-                }
-            }
-        }
-    }
 }

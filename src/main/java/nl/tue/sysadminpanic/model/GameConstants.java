@@ -10,8 +10,14 @@ public final class GameConstants {
 
     // --- Time ---
 
-    /** In-game clock value at tick 0, in seconds since midnight (09:00:00). */
-    public static final int CLOCK_START_SECONDS = 9 * 60 * 60;
+    /** In-game clock value at tick 0, in seconds since midnight (00:00:00, 12 AM). */
+    public static final int CLOCK_START_SECONDS = 0;
+
+    /**
+     * In-game seconds that pass per tick. One tick is one in-game minute, so the
+     * night runs from 12 AM to 6 AM in 360 ticks (six real minutes).
+     */
+    public static final int CLOCK_SECONDS_PER_TICK = 60;
 
     /** Real-time length of one tick, in milliseconds. */
     public static final int TICK_MILLIS = 1000;

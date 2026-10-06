@@ -7,7 +7,7 @@ import nl.tue.sysadminpanic.scenario.OfficeNetworkScenario;
 import nl.tue.sysadminpanic.ui.MainFrame;
 
 /**
- * Entry point of Sysadmin Panic.
+ * Entry point of One Night at ASNL.
  */
 public final class Main {
 
