@@ -7,6 +7,7 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JSplitPane;
 import javax.swing.SwingUtilities;
+import javax.swing.plaf.basic.BasicSplitPaneUI;
 import nl.tue.sysadminpanic.model.Alert;
 import nl.tue.sysadminpanic.model.Device;
 import nl.tue.sysadminpanic.scenario.Scenario;
@@ -43,7 +44,7 @@ public class MainFrame extends JFrame {
      * @param scenario the scenario to play
      */
     public MainFrame(Scenario scenario) {
-        super("Sysadmin Panic");
+        super("One Night at ASNL");
         this.scenario = scenario;
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
@@ -77,6 +78,11 @@ public class MainFrame extends JFrame {
 
         JSplitPane side = new JSplitPane(JSplitPane.VERTICAL_SPLIT, alertPanel, inspectorPanel);
         side.setResizeWeight(0.35);
+        // Metal paints a light, dotted grip on the divider; the basic UI paints a
+        // plain strip in the background color, which fits the terminal look.
+        side.setUI(new BasicSplitPaneUI());
+        side.setDividerSize(4);
+        side.setBorder(null);
         side.setPreferredSize(new Dimension(SIDE_PANEL_WIDTH, 0));
 
         JPanel view = new JPanel(new BorderLayout());

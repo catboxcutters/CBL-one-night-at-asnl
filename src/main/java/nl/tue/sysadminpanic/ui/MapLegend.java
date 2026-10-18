@@ -2,9 +2,9 @@ package nl.tue.sysadminpanic.ui;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
-import java.awt.Font;
 import java.awt.Graphics2D;
-import java.awt.geom.RoundRectangle2D;
+import java.awt.geom.Rectangle2D;
+import nl.tue.sysadminpanic.model.DeviceState;
 
 /**
  * Draws the small key in the top-left corner of the network map.
@@ -15,44 +15,45 @@ class MapLegend {
     private static final int LEFT = 14;
     private static final int TOP = 14;
     private static final int ROW_HEIGHT = 20;
-    private static final int WIDTH = 150;
+    private static final int WIDTH = 190;
     private static final int PADDING = 10;
-    private static final Color PANEL = new Color(20, 26, 34, 220);
-
-    private static final String[] STATE_LABELS = {"Healthy", "Suspicious", "Compromised"};
-    private static final Color[] STATE_COLORS = {
-        NetworkMapPanel.HEALTHY, NetworkMapPanel.SUSPICIOUS, NetworkMapPanel.COMPROMISED
-    };
+    private static final int TEXT_LEFT = LEFT + PADDING + 44;
 
     /** Draws the legend onto the map's graphics. */
     void draw(Graphics2D g) {
-        int rows = STATE_LABELS.length + 2;
-        g.setColor(PANEL);
-        g.fillRoundRect(LEFT, TOP, WIDTH, rows * ROW_HEIGHT + PADDING, 10, 10);
-        g.setFont(g.getFont().deriveFont(Font.PLAIN, 12f));
+        g.setFont(TerminalTheme.font(12f, false));
+        int rows = DeviceState.values().length + 2;
+        g.setColor(TerminalTheme.BACKGROUND);
+        g.fillRect(LEFT, TOP, WIDTH, rows * ROW_HEIGHT + PADDING);
+        g.setColor(TerminalTheme.BORDER);
+        g.setStroke(new BasicStroke(1f));
+        g.drawRect(LEFT, TOP, WIDTH, rows * ROW_HEIGHT + PADDING);
+
         int y = TOP + PADDING;
-        for (int i = 0; i < STATE_LABELS.length; i++) {
-            g.setColor(STATE_COLORS[i]);
-            g.fillRoundRect(LEFT + PADDING, y, 14, 12, 4, 4);
-            label(g, STATE_LABELS[i], y);
+        for (DeviceState state : DeviceState.values()) {
+            Color color = TerminalTheme.colorFor(state);
+            g.setColor(color);
+            g.draw(sampleBox(y));
+            label(g, state.name().toLowerCase(), y, color);
             y += ROW_HEIGHT;
         }
-        drawIsolatedSample(g, y);
-        label(g, "Isolated", y);
-        y += ROW_HEIGHT;
-        NetworkMapPanel.drawShield(g, LEFT + PADDING + 7, y + 5);
-        label(g, "Firewall rule", y);
-    }
-
-    private void drawIsolatedSample(Graphics2D g, int y) {
-        g.setColor(NetworkMapPanel.LIGHT_TEXT);
+        g.setColor(TerminalTheme.TEXT);
         g.setStroke(NetworkMapPanel.DASHED);
-        g.draw(new RoundRectangle2D.Double(LEFT + PADDING, y, 14, 12, 4, 4));
+        g.draw(sampleBox(y));
         g.setStroke(new BasicStroke(1f));
+        label(g, "isolated", y, TerminalTheme.TEXT);
+        y += ROW_HEIGHT;
+        NetworkMapPanel.drawFirewallMarker(g, LEFT + PADDING + 18, y + 6);
+        label(g, "firewall rule", y, TerminalTheme.TEXT);
     }
 
-    private void label(Graphics2D g, String text, int rowTop) {
-        g.setColor(NetworkMapPanel.LIGHT_TEXT);
-        g.drawString(text, LEFT + PADDING + 24, rowTop + 11);
+    /** A small node-like box, the sample in front of each legend row. */
+    private static Rectangle2D sampleBox(int rowTop) {
+        return new Rectangle2D.Double(LEFT + PADDING + 4, rowTop, 28, 12);
+    }
+
+    private static void label(Graphics2D g, String text, int rowTop, Color color) {
+        g.setColor(color);
+        g.drawString(text, TEXT_LEFT, rowTop + 11);
     }
 }

@@ -151,6 +151,69 @@ The panel contains no game rules of its own. It just asks.
 There are no automated GUI tests. Swing tests need a display and are fragile, and the
 behaviour behind every button is already covered by the action tests from phase 3.
 
+## Terminal theme (added after phase 5)
+
+The GUI was later restyled to look like a Linux terminal: dark background, ANSI-style
+colors, monospace text and shell-flavored labels (`root@soc:~$`, `tail -f /var/log/alerts`,
+`isolate · $300`). **Only the look changed.** The layout, the Observer wiring, the button
+logic and every model class are the same as before, and all tests pass unchanged.
+
+### `TerminalTheme`: one palette, one place
+
+| Class | Responsibility |
+|---|---|
+| `TerminalTheme` | Holds every UI color and the font, installs the look and feel, and offers small helpers: `font`, `titledBorder`, `button`, `colorFor(DeviceState)`, `colorFor(Severity)`. |
+
+Before this change, colors were spread over six classes, and the map and the legend each
+had their own copy of "healthy green". Now there is a single palette, the UI counterpart of
+`GameConstants`: change `TerminalTheme.GREEN` and the map, legend, inspector, status bar and
+end dialog all follow. `Main` calls `TerminalTheme.install()` once, on the EDT, before any
+window exists.
+
+### Things to be able to explain
+
+- **Why Metal instead of the system look and feel?** The native Windows and macOS looks
+  ignore many background colors (buttons especially), and they look different on each OS.
+  Metal is Java's own cross-platform look, so the game looks identical everywhere. We use
+  Metal's plain *Steel* theme (`DefaultMetalTheme`) because the default *Ocean* theme paints
+  a light gradient on every button and scroll bar.
+- **How can dialogs be dark when we never style them?** `install()` writes defaults into
+  `UIManager` (keys such as `Panel.background`, `Button.border`, `OptionPane.background`).
+  Every Swing component reads these defaults when it is created. So the
+  `JOptionPane` of the firewall rule, which Swing builds itself, is themed without extra code.
+  This is also why `install()` must run *before* the first window is built.
+- **The font.** Java's generic `Monospaced` font maps to Courier New on Windows, which draws
+  the block characters of the ASCII-art title at the wrong width, so the banner falls apart.
+  `pickFontFamily()` therefore takes the first installed font from a short list of common
+  terminal fonts (Cascadia Mono / Consolas on Windows, Menlo on macOS, DejaVu Sans Mono /
+  Liberation Mono on Linux), with `Monospaced` as the last fallback. No font files are bundled.
+- **Inverse video.** A terminal highlights by swapping foreground and background. The
+  selected map node is filled with its state color and drawn with black text; the selected
+  alert row is light with dark text. This replaced the blue selection halo.
+- **Colored alert tags use HTML.** A `JLabel` has one foreground color, but the severity tag
+  should have its own. Swing labels render simple HTML, so the renderer wraps the tag in
+  `<font color=...>`. Spaces in the tag become `&nbsp;` (HTML would collapse them and the
+  columns would no longer line up), and the summary is escaped. Selected rows skip the HTML
+  and use a single inverse color.
+- **The blinking cursor** in the event feed has its own 500 ms `javax.swing.Timer` in
+  `ControlBar`. It is purely cosmetic and separate from `GameClock`, so it keeps blinking
+  while the game is paused. A `HierarchyListener` stops it when "Play again" replaces the
+  bar, so old timers don't keep running.
+- **The firewall-rule marker** is now a small cyan `[fw]` box instead of a shield. It is
+  shared by the map and the legend (`NetworkMapPanel.drawFirewallMarker`).
+- **The split-pane divider** uses `BasicSplitPaneUI`, because Metal paints a light, dotted
+  grip on it.
+- **Alert rows wrap.** Each row is a two-column HTML table (time and tag | summary) as
+  wide as the list, so a long summary wraps inside its own column and stays readable.
+  Two details make this work:
+  - The list overrides `getScrollableTracksViewportWidth()` to return `true`. Otherwise
+    `JList` grows as wide as its longest row and nothing ever wraps.
+  - `JList` caches row heights. When the panel is resized, rows wrap differently and change
+    height, so a resize listener clears that cache by toggling `setFixedCellHeight`.
+
+The theme was checked by rendering the start screen, game view, an isolated device, the
+firewall dialog and the end dialog to images off-screen, then looking at them.
+
 ## Suggested commit message
 
 ```

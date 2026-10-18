@@ -1,11 +1,12 @@
 package nl.tue.sysadminpanic.ui;
 
 import java.awt.BorderLayout;
-import java.awt.Font;
 import java.awt.GridLayout;
+import java.awt.Insets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -48,7 +49,7 @@ public class InspectorPanel extends JPanel implements GameEventListener {
     private static final String NO_DEVICE = "Select a device on the map";
     private static final String NO_ALERT = "Select an alert to block its source IP";
     private static final String NOT_INSPECTED =
-            "Not inspected yet.\nUse Inspect (free) to read this device's log.";
+            "Not inspected yet.\nRun 'inspect' (free) to read this device's log.";
 
     private final Simulation simulation;
     private final JLabel nameLabel = new JLabel(NO_DEVICE);
@@ -74,10 +75,11 @@ public class InspectorPanel extends JPanel implements GameEventListener {
         super(new BorderLayout(0, 8));
         this.simulation = simulation;
         setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createTitledBorder("Inspector"),
+                TerminalTheme.titledBorder("inspect"),
                 BorderFactory.createEmptyBorder(4, 6, 6, 6)));
         logArea.setEditable(false);
-        logArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+        logArea.setFont(TerminalTheme.font(12f, false));
+        logArea.setMargin(new Insets(4, 6, 4, 6));
         // Wrap long lines so the start of every line stays visible.
         logArea.setLineWrap(true);
         logArea.setWrapStyleWord(true);
@@ -90,7 +92,7 @@ public class InspectorPanel extends JPanel implements GameEventListener {
     private JPanel buildHeader() {
         JPanel header = new JPanel();
         header.setLayout(new BoxLayout(header, BoxLayout.Y_AXIS));
-        nameLabel.setFont(nameLabel.getFont().deriveFont(Font.BOLD, 18f));
+        nameLabel.setFont(TerminalTheme.font(18f, true));
         header.add(nameLabel);
         header.add(detailLabel);
         return header;
@@ -147,17 +149,19 @@ public class InspectorPanel extends JPanel implements GameEventListener {
     private void showHeader() {
         if (device == null) {
             nameLabel.setText(NO_DEVICE);
+            nameLabel.setForeground(TerminalTheme.DIM);
             detailLabel.setText(" ");
             return;
         }
         nameLabel.setText(device.getName());
-        String details = capitalize(device.getType().name()) + "  ·  Known state: "
-                + capitalize(device.getKnownState().name());
+        nameLabel.setForeground(TerminalTheme.colorFor(device.getKnownState()));
+        String details = "type: " + lower(device.getType().name())
+                + "  state: " + lower(device.getKnownState().name());
         if (device.isPatched()) {
-            details += "  ·  patched";
+            details += "  [patched]";
         }
         if (device.isIsolated()) {
-            details += "  ·  isolated";
+            details += "  [isolated]";
         }
         detailLabel.setText(details);
     }
@@ -274,16 +278,16 @@ public class InspectorPanel extends JPanel implements GameEventListener {
     // --- Helpers ---
 
     private static JButton button(String name, int price) {
-        return new JButton(label(name, price));
+        return TerminalTheme.button(label(name, price));
     }
 
-    /** Button text such as "Isolate · $300" or "Inspect · free". */
+    /** Button text such as "isolate · $300" or "inspect · free", like a shell command. */
     private static String label(String name, int price) {
-        return name + " · " + (price == 0 ? "free" : Wallet.format(price));
+        return name.toLowerCase(Locale.ROOT) + " · "
+                + (price == 0 ? "free" : Wallet.format(price));
     }
 
-    private static String capitalize(String enumName) {
-        String lower = enumName.toLowerCase();
-        return Character.toUpperCase(lower.charAt(0)) + lower.substring(1);
+    private static String lower(String enumName) {
+        return enumName.toLowerCase(Locale.ROOT);
     }
 }

@@ -1,13 +1,12 @@
 package nl.tue.sysadminpanic.app;
 
 import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
-import javax.swing.UnsupportedLookAndFeelException;
 import nl.tue.sysadminpanic.scenario.OfficeNetworkScenario;
 import nl.tue.sysadminpanic.ui.MainFrame;
+import nl.tue.sysadminpanic.ui.TerminalTheme;
 
 /**
- * Entry point of Sysadmin Panic.
+ * Entry point of One Night at ASNL.
  */
 public final class Main {
 
@@ -23,17 +22,8 @@ public final class Main {
     public static void main(String[] args) {
         // Swing components may only be created and touched on the Event Dispatch Thread.
         SwingUtilities.invokeLater(() -> {
-            useSystemLookAndFeel();
+            TerminalTheme.install();
             new MainFrame(new OfficeNetworkScenario()).setVisible(true);
         });
-    }
-
-    /** Makes the game look native on Windows, macOS and Linux. */
-    private static void useSystemLookAndFeel() {
-        try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (ReflectiveOperationException | UnsupportedLookAndFeelException e) {
-            // Not fatal: Swing falls back to its default look.
-        }
     }
 }

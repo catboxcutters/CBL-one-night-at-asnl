@@ -14,7 +14,7 @@ public enum AlertType {
         this.label = label;
     }
 
-    /** @return a short human-readable name for display */
+    /** @return a short readable name for display */
     public String getLabel() {
         return label;
     }

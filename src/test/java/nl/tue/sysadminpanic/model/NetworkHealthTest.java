@@ -65,16 +65,17 @@ class NetworkHealthTest {
     }
 
     @Test
-    void gameTimeStartsAtNineAndCountsSeconds() {
-        assertEquals("09:00:00", GameTime.format(0));
-        assertEquals("09:00:59", GameTime.format(59));
-        assertEquals("09:01:00", GameTime.format(60));
-        assertEquals("10:00:01", GameTime.format(3601));
+    void gameTimeStartsAtMidnightAndCountsMinutes() {
+        assertEquals("00:00:00", GameTime.format(0));
+        assertEquals("00:01:00", GameTime.format(1));
+        assertEquals("00:59:00", GameTime.format(59));
+        assertEquals("01:00:00", GameTime.format(60));
+        assertEquals("06:00:00", GameTime.format(360));
     }
 
     @Test
     void logEntryFormatsWithClockTime() {
         LogEntry entry = new LogEntry(15, "SERVER-01", "Failed login: admin from 203.0.113.42");
-        assertEquals("09:00:15  Failed login: admin from 203.0.113.42", entry.formatted());
+        assertEquals("00:15:00  Failed login: admin from 203.0.113.42", entry.formatted());
     }
 }

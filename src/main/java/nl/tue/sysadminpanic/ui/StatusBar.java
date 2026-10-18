@@ -1,9 +1,8 @@
 package nl.tue.sysadminpanic.ui;
 
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.FlowLayout;
-import java.awt.Font;
+import java.util.Locale;
 import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -15,15 +14,14 @@ import nl.tue.sysadminpanic.sim.GameEventListener;
 import nl.tue.sysadminpanic.sim.Simulation;
 
 /**
- * The top bar: scenario name, clock, wave counter, money and the health bar.
+ * The top bar: scenario name (as a shell path), clock, wave counter, money and
+ * the health bar.
  */
 public class StatusBar extends JPanel implements GameEventListener {
 
-    private static final Color HEALTH_GOOD = new Color(46, 157, 87);
-    private static final Color HEALTH_WARNING = new Color(224, 161, 0);
-    private static final Color HEALTH_CRITICAL = new Color(214, 69, 65);
     private static final int WARNING_BELOW = 60;
     private static final int CRITICAL_BELOW = 30;
+    private static final String SEPARATOR = "│";
 
     private final Simulation simulation;
     private final JLabel clockLabel = infoLabel();
@@ -36,20 +34,25 @@ public class StatusBar extends JPanel implements GameEventListener {
      * @param simulation   the game, read for the initial values
      */
     public StatusBar(String scenarioName, Simulation simulation) {
-        super(new BorderLayout(12, 0));
+        super(new BorderLayout(16, 0));
         this.simulation = simulation;
-        setBorder(BorderFactory.createEmptyBorder(8, 12, 8, 12));
+        setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 1, 0, TerminalTheme.BORDER),
+                BorderFactory.createEmptyBorder(8, 12, 8, 12)));
 
-        JPanel info = new JPanel(new FlowLayout(FlowLayout.LEFT, 18, 0));
-        JLabel nameLabel = infoLabel();
-        nameLabel.setText(scenarioName);
-        info.add(nameLabel);
-        info.add(clockLabel);
-        info.add(waveLabel);
-        info.add(moneyLabel);
+        JPanel info = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        JLabel pathLabel = infoLabel();
+        pathLabel.setText("root@soc:~/" + asPath(scenarioName));
+        pathLabel.setForeground(TerminalTheme.GREEN);
+        info.add(pathLabel);
+        for (JLabel label : new JLabel[] {clockLabel, waveLabel, moneyLabel}) {
+            info.add(separator());
+            info.add(label);
+        }
         add(info, BorderLayout.WEST);
 
         healthBar.setStringPainted(true);
+        healthBar.setFont(TerminalTheme.font(14f, true));
         add(healthBar, BorderLayout.CENTER);
 
         showClock(simulation.getCurrentTick());
@@ -77,7 +80,7 @@ public class StatusBar extends JPanel implements GameEventListener {
     }
 
     private void showWave() {
-        waveLabel.setText("Wave " + simulation.getCurrentWaveNumber() + "/"
+        waveLabel.setText("wave " + simulation.getCurrentWaveNumber() + "/"
                 + simulation.getTotalWaves());
     }
 
@@ -89,19 +92,31 @@ public class StatusBar extends JPanel implements GameEventListener {
         // Round up so the bar only shows 0% when the game is really lost.
         int percent = (int) Math.ceil(health);
         healthBar.setValue(percent);
-        healthBar.setString("Network health " + percent + "%");
+        healthBar.setString("network health " + percent + "%");
         if (percent < CRITICAL_BELOW) {
-            healthBar.setForeground(HEALTH_CRITICAL);
+            healthBar.setForeground(TerminalTheme.RED);
         } else if (percent < WARNING_BELOW) {
-            healthBar.setForeground(HEALTH_WARNING);
+            healthBar.setForeground(TerminalTheme.YELLOW);
         } else {
-            healthBar.setForeground(HEALTH_GOOD);
+            healthBar.setForeground(TerminalTheme.GREEN);
         }
+    }
+
+    /** "Office Network" becomes "office-network", like a directory name. */
+    private static String asPath(String name) {
+        return name.toLowerCase(Locale.ROOT).replace(' ', '-');
+    }
+
+    private static JLabel separator() {
+        JLabel label = infoLabel();
+        label.setText(SEPARATOR);
+        label.setForeground(TerminalTheme.DIM);
+        return label;
     }
 
     private static JLabel infoLabel() {
         JLabel label = new JLabel();
-        label.setFont(label.getFont().deriveFont(Font.BOLD, 14f));
+        label.setFont(TerminalTheme.font(14f, true));
         return label;
     }
 }

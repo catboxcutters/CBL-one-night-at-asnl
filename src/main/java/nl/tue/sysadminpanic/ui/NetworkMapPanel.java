@@ -3,7 +3,6 @@ package nl.tue.sysadminpanic.ui;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
@@ -13,8 +12,8 @@ import java.awt.Stroke;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Line2D;
-import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
+import java.awt.geom.Rectangle2D;
 import java.awt.geom.RoundRectangle2D;
 import java.util.function.Consumer;
 import javax.swing.JPanel;
@@ -26,7 +25,7 @@ import nl.tue.sysadminpanic.sim.GameEvent;
 import nl.tue.sysadminpanic.sim.GameEventListener;
 
 /**
- * The clickable network map.
+ * The clickable network map, drawn in the terminal style.
  *
  * <p>Devices are drawn at their relative (0..1) positions scaled to the current
  * panel size, so the map follows the window when it is resized. Colors show the
@@ -34,29 +33,18 @@ import nl.tue.sysadminpanic.sim.GameEventListener;
  */
 public class NetworkMapPanel extends JPanel implements GameEventListener {
 
-    private static final int NODE_WIDTH = 104;
-    private static final int NODE_HEIGHT = 40;
-    private static final int NODE_ARC = 14;
+    private static final int NODE_WIDTH = 110;
+    private static final int NODE_HEIGHT = 36;
+    private static final int NODE_ARC = 4;
     // Keeps nodes at the edges (x or y of 0 or 1) fully inside the panel.
     private static final int MARGIN_X = NODE_WIDTH / 2 + 16;
     private static final int MARGIN_Y = NODE_HEIGHT / 2 + 16;
-
-    static final Color BACKGROUND = new Color(30, 37, 48);
-    static final Color HEALTHY = new Color(46, 157, 87);
-    static final Color SUSPICIOUS = new Color(230, 168, 23);
-    static final Color COMPROMISED = new Color(214, 69, 65);
-    static final Color INTERNET = new Color(128, 136, 148);
-    static final Color LINK = new Color(107, 118, 134);
-    static final Color BROKEN_LINK = new Color(214, 69, 65);
-    static final Color SHIELD = new Color(66, 133, 244);
-    static final Color SELECTION = new Color(120, 200, 255);
-    static final Color LIGHT_TEXT = new Color(222, 228, 236);
-    private static final Color DARK_TEXT = new Color(30, 30, 30);
+    private static final String FIREWALL_MARKER = "[fw]";
 
     static final Stroke DASHED = new BasicStroke(2f, BasicStroke.CAP_BUTT,
             BasicStroke.JOIN_MITER, 10f, new float[] {6f, 4f}, 0f);
     private static final Stroke SOLID = new BasicStroke(2f);
-    private static final Stroke SELECTION_STROKE = new BasicStroke(3f);
+    private static final Stroke THIN = new BasicStroke(1f);
 
     private final Network network;
     private final MapLegend legend = new MapLegend();
@@ -68,7 +56,7 @@ public class NetworkMapPanel extends JPanel implements GameEventListener {
      */
     public NetworkMapPanel(Network network, Consumer<Device> onDeviceSelected) {
         this.network = network;
-        setBackground(BACKGROUND);
+        setBackground(TerminalTheme.BACKGROUND);
         setPreferredSize(new Dimension(760, 560));
         addMouseListener(new MouseAdapter() {
             @Override
@@ -126,6 +114,7 @@ public class NetworkMapPanel extends JPanel implements GameEventListener {
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
                 RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        g.setFont(TerminalTheme.font(13f, true));
         for (Link link : network.getLinks()) {
             drawLink(g, link);
         }
@@ -142,18 +131,18 @@ public class NetworkMapPanel extends JPanel implements GameEventListener {
         if (link.getFirst().isIsolated() || link.getSecond().isIsolated()) {
             drawBrokenLine(g, a, b);
         } else {
-            g.setColor(LINK);
+            g.setColor(TerminalTheme.DIM);
             g.setStroke(SOLID);
             g.draw(new Line2D.Double(a, b));
         }
         if (link.isBlocked()) {
-            drawShield(g, (a.getX() + b.getX()) / 2, (a.getY() + b.getY()) / 2);
+            drawFirewallMarker(g, (a.getX() + b.getX()) / 2, (a.getY() + b.getY()) / 2);
         }
     }
 
     /** Draws a red line with a gap in the middle: the cable is unplugged. */
     private void drawBrokenLine(Graphics2D g, Point2D a, Point2D b) {
-        g.setColor(BROKEN_LINK);
+        g.setColor(TerminalTheme.RED);
         g.setStroke(SOLID);
         g.draw(new Line2D.Double(a, pointBetween(a, b, 0.4)));
         g.draw(new Line2D.Double(pointBetween(a, b, 0.6), b));
@@ -164,61 +153,49 @@ public class NetworkMapPanel extends JPanel implements GameEventListener {
                 a.getY() + (b.getY() - a.getY()) * fraction);
     }
 
-    /** Draws a small shield centered on (x, y): the marker for a firewall rule. */
-    static void drawShield(Graphics2D g, double x, double y) {
-        Path2D shield = new Path2D.Double();
-        shield.moveTo(x - 8, y - 9);
-        shield.lineTo(x + 8, y - 9);
-        shield.lineTo(x + 8, y);
-        shield.quadTo(x + 8, y + 7, x, y + 11);
-        shield.quadTo(x - 8, y + 7, x - 8, y);
-        shield.closePath();
-        g.setColor(SHIELD);
-        g.fill(shield);
-        g.setColor(Color.WHITE);
-        g.setStroke(new BasicStroke(1.5f));
-        g.draw(shield);
+    /**
+     * Draws the firewall-rule marker, a small cyan "[fw]" box, centered on (x, y).
+     * Uses the font currently set on {@code g}.
+     */
+    static void drawFirewallMarker(Graphics2D g, double x, double y) {
+        FontMetrics metrics = g.getFontMetrics();
+        int width = metrics.stringWidth(FIREWALL_MARKER) + 6;
+        int height = metrics.getHeight();
+        Rectangle2D box = new Rectangle2D.Double(x - width / 2.0, y - height / 2.0,
+                width, height);
+        g.setColor(TerminalTheme.BACKGROUND);
+        g.fill(box);
+        g.setColor(TerminalTheme.CYAN);
+        g.setStroke(THIN);
+        g.draw(box);
+        drawCentered(g, FIREWALL_MARKER, box.getCenterX(), box.getCenterY());
     }
 
     private void drawNode(Graphics2D g, Device device) {
         RoundRectangle2D shape = nodeShape(device);
-        Color fill = fillFor(device);
-        g.setColor(fill);
+        Color color = colorFor(device);
+        // The selected node is drawn in inverse video, like a highlighted terminal line.
+        boolean inverse = device == selected;
+        g.setColor(inverse ? color : TerminalTheme.BACKGROUND);
         g.fill(shape);
-        // Isolated devices get a light dashed border: "unplugged".
-        g.setColor(device.isIsolated() ? LIGHT_TEXT : fill.darker());
+        g.setColor(color);
         g.setStroke(device.isIsolated() ? DASHED : SOLID);
         g.draw(shape);
-        if (device == selected) {
-            drawSelection(g, shape);
-        }
-        drawName(g, device, shape, fill == SUSPICIOUS ? DARK_TEXT : Color.WHITE);
+        g.setColor(inverse ? TerminalTheme.BACKGROUND : color);
+        drawCentered(g, device.getName(), shape.getCenterX(), shape.getCenterY());
     }
 
-    private void drawSelection(Graphics2D g, RoundRectangle2D shape) {
-        g.setColor(SELECTION);
-        g.setStroke(SELECTION_STROKE);
-        g.draw(new RoundRectangle2D.Double(shape.getX() - 5, shape.getY() - 5,
-                shape.getWidth() + 10, shape.getHeight() + 10, NODE_ARC + 6, NODE_ARC + 6));
-    }
-
-    private void drawName(Graphics2D g, Device device, RoundRectangle2D shape, Color color) {
-        g.setFont(getFont().deriveFont(Font.BOLD, 13f));
+    private static void drawCentered(Graphics2D g, String text, double centerX, double centerY) {
         FontMetrics metrics = g.getFontMetrics();
-        int textX = (int) (shape.getCenterX() - metrics.stringWidth(device.getName()) / 2.0);
-        int textY = (int) (shape.getCenterY() + (metrics.getAscent() - metrics.getDescent()) / 2.0);
-        g.setColor(color);
-        g.drawString(device.getName(), textX, textY);
+        int textX = (int) (centerX - metrics.stringWidth(text) / 2.0);
+        int textY = (int) (centerY + (metrics.getAscent() - metrics.getDescent()) / 2.0);
+        g.drawString(text, textX, textY);
     }
 
-    private static Color fillFor(Device device) {
+    private static Color colorFor(Device device) {
         if (device.getType() == DeviceType.INTERNET) {
-            return INTERNET;
+            return TerminalTheme.DIM;
         }
-        return switch (device.getKnownState()) {
-            case HEALTHY -> HEALTHY;
-            case SUSPICIOUS -> SUSPICIOUS;
-            case COMPROMISED -> COMPROMISED;
-        };
+        return TerminalTheme.colorFor(device.getKnownState());
     }
 }
