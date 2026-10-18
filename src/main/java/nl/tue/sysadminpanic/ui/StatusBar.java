@@ -76,7 +76,7 @@ public class StatusBar extends JPanel implements GameEventListener {
     }
 
     private void showClock(int tick) {
-        clockLabel.setText(GameTime.format(tick));
+        clockLabel.setText(GameTime.formatHour(tick));
     }
 
     private void showWave() {

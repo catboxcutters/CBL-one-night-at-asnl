@@ -14,10 +14,10 @@ public final class GameConstants {
     public static final int CLOCK_START_SECONDS = 0;
 
     /**
-     * In-game seconds that pass per tick. One tick is one in-game minute, so the
-     * night runs from 12 AM to 6 AM in 360 ticks (six real minutes).
+     * In-game seconds that pass per tick. One tick is three in-game minutes, so
+     * 12 AM to 6 AM takes 120 ticks: about as long as all five waves last.
      */
-    public static final int CLOCK_SECONDS_PER_TICK = 60;
+    public static final int CLOCK_SECONDS_PER_TICK = 180;
 
     /** Real-time length of one tick, in milliseconds. */
     public static final int TICK_MILLIS = 1000;

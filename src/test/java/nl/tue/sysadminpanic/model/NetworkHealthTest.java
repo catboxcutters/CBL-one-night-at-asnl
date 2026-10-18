@@ -65,17 +65,28 @@ class NetworkHealthTest {
     }
 
     @Test
-    void gameTimeStartsAtMidnightAndCountsMinutes() {
+    void gameTimeStartsAtMidnightAndCountsThreeMinutesPerTick() {
         assertEquals("00:00:00", GameTime.format(0));
-        assertEquals("00:01:00", GameTime.format(1));
-        assertEquals("00:59:00", GameTime.format(59));
-        assertEquals("01:00:00", GameTime.format(60));
-        assertEquals("06:00:00", GameTime.format(360));
+        assertEquals("00:03:00", GameTime.format(1));
+        assertEquals("00:57:00", GameTime.format(19));
+        assertEquals("01:00:00", GameTime.format(20));
+        assertEquals("06:00:00", GameTime.format(120));
+    }
+
+    @Test
+    void hourFormatRunsFromTwelveAmToSixAm() {
+        assertEquals("12 AM", GameTime.formatHour(0));
+        assertEquals("12 AM", GameTime.formatHour(19));
+        assertEquals("1 AM", GameTime.formatHour(20));
+        assertEquals("5 AM", GameTime.formatHour(119));
+        assertEquals("6 AM", GameTime.formatHour(120));
+        assertEquals("12 PM", GameTime.formatHour(240));
+        assertEquals("1 PM", GameTime.formatHour(260));
     }
 
     @Test
     void logEntryFormatsWithClockTime() {
         LogEntry entry = new LogEntry(15, "SERVER-01", "Failed login: admin from 203.0.113.42");
-        assertEquals("00:15:00  Failed login: admin from 203.0.113.42", entry.formatted());
+        assertEquals("00:45:00  Failed login: admin from 203.0.113.42", entry.formatted());
     }
 }
