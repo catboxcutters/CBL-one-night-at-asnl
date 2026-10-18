@@ -31,11 +31,25 @@ public class MainFrame extends JFrame {
     private static final int MIN_HEIGHT = 640;
     private static final int SIDE_PANEL_WIDTH = 420;
 
+    private static final String MENU_MUSIC = "/audio/start_theme.wav";
+    private static final double MENU_VOLUME = 0.7;
+    private static final String AMBIENT_MUSIC = "/audio/ambient.wav";
+    /** Linear volume of the in-game ambience: 1.0 is the file's own level. */
+    private static final double AMBIENT_VOLUME = 0.5;
+    private static final String VICTORY_SOUND = "/audio/victory.wav";
+    private static final double VICTORY_VOLUME = 0.5;
+    private static final String DEFEAT_SOUND = "/audio/defeat.wav";
+    private static final double DEFEAT_VOLUME = 0.2;
+
     private final Scenario scenario;
     private Simulation simulation;
     private GameClock clock;
     private NetworkMapPanel mapPanel;
     private InspectorPanel inspectorPanel;
+    private final GameSound menuMusic;
+    private GameSound ambientMusic;
+    /** The victory or defeat sound of the last game, if it is still playing. */
+    private GameSound endSound;
 
     /**
      * Creates the window showing the start screen. It is not visible until
@@ -50,11 +64,34 @@ public class MainFrame extends JFrame {
         setSize(DEFAULT_WIDTH, DEFAULT_HEIGHT);
         setMinimumSize(new Dimension(MIN_WIDTH, MIN_HEIGHT));
         setLocationRelativeTo(null);
-        setContentPane(new StartScreen(this::startGame));
+        setContentPane(new StartScreen(this::showIntro));
+        // Plays on the start screen and the intro image, until the player clicks the image.
+        menuMusic = GameSound.loop(MENU_MUSIC, MENU_VOLUME);
+    }
+
+    /** Replaces the start screen with the full-window intro image. */
+    private void showIntro() {
+        setContentPane(new IntroScreen(this::beginNight));
+        revalidate();
+        repaint();
+    }
+
+    /** Called when the player clicks the intro image: the menu music ends, the game begins. */
+    private void beginNight() {
+        menuMusic.stop();
+        startGame();
     }
 
     /** Starts a fresh game; also used by "Play again". */
     private void startGame() {
+        // Silence the previous run first: "Play again" must not layer sounds.
+        if (ambientMusic != null) {
+            ambientMusic.stop();
+        }
+        if (endSound != null) {
+            endSound.stop();
+        }
+        ambientMusic = GameSound.loop(AMBIENT_MUSIC, AMBIENT_VOLUME);
         simulation = Simulation.forScenario(scenario);
         clock = new GameClock(simulation::tick);
         setContentPane(buildGameView());
@@ -106,10 +143,16 @@ public class MainFrame extends JFrame {
     private void onGameEvent(GameEvent event) {
         if (event instanceof GameEvent.GameOver) {
             clock.pause();
+            ambientMusic.stop();
             // Open the dialog after the current tick has finished: a modal dialog
             // opened here would block inside Simulation.tick().
-            SwingUtilities.invokeLater(() ->
-                    new EndDialog(this, simulation.getStats(), this::startGame).setVisible(true));
+            SwingUtilities.invokeLater(() -> {
+                boolean won = simulation.getStats().won();
+                endSound = won
+                        ? GameSound.playOnce(VICTORY_SOUND, VICTORY_VOLUME)
+                        : GameSound.playOnce(DEFEAT_SOUND, DEFEAT_VOLUME);
+                new EndDialog(this, simulation.getStats(), this::startGame).setVisible(true);
+            });
         }
     }
 }
